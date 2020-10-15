@@ -1,0 +1,135 @@
+---
+title: "m02_v01_store_sales_predictions"
+author: "Data Science in Foco"
+date: "11/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 0.0. IMPORTS
+
+```{r}
+
+library(tidyverse)
+library(snakecase)
+library(lubridate)
+library(imputeTS)
+
+```
+
+## 0.2. Loading Data
+
+```{r}
+
+# Dataset of Sales
+df_sales_raw <- read.csv("Data/train.csv", stringsAsFactors = F)
+
+# Dataset of Stores
+df_store_raw <- read.csv("Data/store.csv", stringsAsFactors = F)
+
+# merge
+df_raw <- merge(df_sales_raw, df_store_raw, by= "Store")
+
+```
+
+# 1.0. Description of Data
+
+## 1.1. Rename Columns
+
+```{r}
+
+# Add underscore in name of columns
+names(df_raw)[1:18] <- to_upper_camel_case(names(df_raw)[1:18], sep_out = "_")
+
+rmarkdown::paged_table(head(df_raw))
+
+```
+## 1.2. Data Dimensions
+
+```{r}
+
+print(paste("Number of Rows: " ,nrow(df_raw)))
+print(paste("Number of Cols: " ,ncol(df_raw)))
+
+```
+
+## 1.3. Data Types
+
+```{r}
+
+# Covertendo para data
+df_raw$Date <- ymd(df_raw$Date)  
+
+str(df_raw)
+
+```
+
+
+## 1.4. Check NA
+
+
+```{r}
+
+df_raw$Promo_Interval[df_raw$Promo_Interval==""] = "0"
+
+```
+
+```{r}
+
+colSums(is.na(df_raw))
+
+```
+
+## 1.5. Fillout NA
+
+```{r}
+
+# Competition_Distance 
+# Competition_Open_Since_Month  
+# Competition_Open_Since_Year                      
+# Promo_2_Since_Week 
+# Promo_2_Since_Year               
+# Promo_Interval 
+
+df_raw <- df_raw %>% 
+  mutate(Competition_Distance = ifelse(is.na(Competition_Distance), 200000, Competition_Distance),
+         Competition_Open_Since_Month = ifelse(is.na(Competition_Open_Since_Month), month(Date), Competition_Open_Since_Month),
+         Competition_Open_Since_Year = ifelse(is.na(Competition_Open_Since_Year), year(Date), Competition_Open_Since_Year),
+         Promo_2_Since_Week = ifelse(is.na(Promo_2_Since_Week), week(Date), Promo_2_Since_Week),
+         Promo_2_Since_Year = ifelse(is.na(Promo_2_Since_Year), year(Date), Promo_2_Since_Year),
+         month_map = month(Date),
+         month_map = month.abb[month_map])
+
+
+
+```
+
+
+```{r}
+
+df_raw$Promo_Interval <- str_squish(df_raw$Promo_Interval)
+
+df_raw <- df_raw %>% 
+  mutate(is_prom0 = ifelse(str_detect(month_map, Promo_Interval),1,0))
+
+           
+```
+
+
+```{r}
+
+t(head(df_raw)) 
+
+```
+
+```{r}
+df <- tibble(col1 = "Jan,Apr,Jul,Oct",col2 = "Jan")
+
+df %>% 
+  mutate(col3 = ifelse(str_detect(col1,col2),1,0))
+```
+
+
